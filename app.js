@@ -31,6 +31,7 @@ const node_session_secret = process.env.NODE_SESSION_SECRET;
 const { database } = include("databaseConnection");
 const userCollection = database.db(mongodb_user_database).collection("users");
 
+app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
@@ -67,22 +68,30 @@ app.use(
   }),
 );
 
+const navLinks = [
+  { name: "Home", url: "/" },
+  { name: "Signup", url: "/signup" },
+  { name: "Login", url: "/login" },
+  { name: "Members", url: "/members" },
+  { name: "Logout", url: "/logout" },
+];
+
+app.use((req, res, next) => {
+  const pathFolders = req.path.split("/").slice(1);
+  const folder = "/" + pathFolders[0];
+  app.locals.folder = folder;
+  app.locals.navLinks = navLinks;
+  next();
+});
+
 // Routes
 app.get("/", (req, res) => {
   if (!req.session.authenticated) {
-    res.send(`                     
-          <a href="/signup">Sign up</a><br>
-          <a href="/login">Login</a><br>                       
-      `);
+    res.redirect("login");
     return;
   }
-
-  var html = `
-    Hello, ${req.session.name}!<br>
-     <a href="/members">Go to Members Area</a><br>
-     <a href="/logout">Logout</a><br>
-    `;
-  res.send(html);
+  var name = req.session.name;
+  res.render("index", { name: name });
 });
 
 app.get("/members", (req, res) => {
@@ -91,27 +100,15 @@ app.get("/members", (req, res) => {
     return;
   }
   const images = ["luffy.png", "zoro.png", "sanji.png"];
-  const randomImage = images[Math.floor(Math.random() * images.length)];
+  const image = images[Math.floor(Math.random() * images.length)];
 
-  var html = `
-  Hello, ${req.session.name}! <br>
-  <img src='/${randomImage}' style='width:250px;'> <br>
-  <a href="/logout">Sign out</a><br>
-`;
-  res.send(html);
+  var name = req.session.name;
+
+  res.render("members", { name: name, image: image });
 });
 
 app.get("/signup", (req, res) => {
-  var html = `
-    create user
-    <form action='/submitUser' method='post'>
-    <input name='name' type='text' placeholder='name'><br>
-    <input name='email' type='email' placeholder='email'><br>
-    <input name='password' type='password' placeholder='password'><br>
-    <button>Submit</button>
-    </form>
-    `;
-  res.send(html);
+  res.render("signup");
 });
 
 app.post("/submitUser", async (req, res) => {
@@ -151,15 +148,7 @@ app.post("/submitUser", async (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  var html = `
-    log in
-    <form action='/loginSubmit' method='post'>    
-    <input name='email' type='email' placeholder='email'><br>
-    <input name='password' type='password' placeholder='password'><br>
-    <button>Submit</button>
-    </form>
-    `;
-  res.send(html);
+  res.render("login");
 });
 
 app.post("/loginSubmit", async (req, res) => {
@@ -171,11 +160,7 @@ app.post("/loginSubmit", async (req, res) => {
 
   if (validationResult.error != null) {
     console.log(validationResult.error);
-    var html = `
-    Invalid email/password combination. <br>
-    <a href="/login">Try again</a><br>
-    `;
-    res.send(html);
+    res.render("incorrectLogin");
     return;
   }
 
@@ -187,11 +172,7 @@ app.post("/loginSubmit", async (req, res) => {
   console.log(result);
   if (result.length != 1) {
     console.log("user not found");
-    var html = `
-    Invalid email/password combination. <br>
-    <a href="/login">Try again</a><br>
-    `;
-    res.send(html);
+    res.render("incorrectLogin");
     return;
   }
   if (await bcrypt.compare(password, result[0].password)) {
@@ -204,11 +185,7 @@ app.post("/loginSubmit", async (req, res) => {
     return;
   } else {
     console.log("incorrect password");
-    var html = `
-    Invalid email/password combination. <br>
-    <a href="/login">Try again</a><br>
-    `;
-    res.send(html);
+    res.render("incorrectLogin");
     return;
   }
 });
@@ -222,7 +199,7 @@ app.use(express.static(__dirname + "/public"));
 
 app.use((req, res) => {
   res.status(404);
-  res.send("Page not found - 404");
+  res.render("404");
 });
 
 // Start server
