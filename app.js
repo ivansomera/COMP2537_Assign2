@@ -155,10 +155,9 @@ app.post("/submitUser", async (req, res) => {
   const validationResult = schema.validate({ name, email, password });
   if (validationResult.error != null) {
     console.log(validationResult.error);
-
     var error = validationResult.error.details[0].context.label;
-
     res.render("incorrectSignup", { error: error });
+    return;
   }
 
   var hashedPassword = await bcrypt.hash(password, saltRounds);
