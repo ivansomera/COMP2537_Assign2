@@ -1,7 +1,7 @@
 <%- include("templates/header") %>
-
+<div class="d-flex justify-content-center flex-column align-items-center">
   <form action="/loginSubmit" method="post" class="d-flex flex-column gap-3">
-    <h1 class="h3 mb-3 fw-normal">Login</h1>
+    <h1 class="h3 mb-3 fw-normal text-center">Login</h1>
     <div class="form-floating">
       <input
         type="email"
@@ -24,6 +24,5 @@
     </div>
     <button class="btn btn-primary w-100 py-2" type="submit">Sign in</button>
   </form>
-
-  <%- include("templates/footer") %>
 </div>
+<%- include("templates/footer") %>
