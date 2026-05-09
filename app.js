@@ -68,11 +68,44 @@ app.use(
   }),
 );
 
+function isValidSession(req) {
+  if (req.session.authenticated) {
+    return true;
+  }
+  return false;
+}
+
+function sessionValidation(req, res, next) {
+  if (isValidSession(req)) {
+    next();
+  } else {
+    res.redirect("/login");
+  }
+}
+
+function isAdmin(req) {
+  if (req.session.user_type == "admin") {
+    return true;
+  }
+  return false;
+}
+
+function adminAuthorization(req, res, next) {
+  if (!isAdmin(req)) {
+    res.status(403);
+    res.render("errorMessage", { error: "Not Authorized" });
+    return;
+  } else {
+    next();
+  }
+}
+
 const navLinks = [
   { name: "Home", url: "/" },
   { name: "Signup", url: "/signup" },
   { name: "Login", url: "/login" },
   { name: "Members", url: "/members" },
+  { name: "Admin", url: "/admin" },
   { name: "Logout", url: "/logout" },
 ];
 
@@ -87,7 +120,7 @@ app.use((req, res, next) => {
 // Routes
 app.get("/", (req, res) => {
   if (!req.session.authenticated) {
-    res.redirect("login");
+    res.redirect("/login");
     return;
   }
   var name = req.session.name;
@@ -99,12 +132,9 @@ app.get("/members", (req, res) => {
     res.redirect("/login");
     return;
   }
-  const images = ["luffy.png", "zoro.png", "sanji.png"];
-  const image = images[Math.floor(Math.random() * images.length)];
-
   var name = req.session.name;
 
-  res.render("members", { name: name, image: image });
+  res.render("members", { name: name });
 });
 
 app.get("/signup", (req, res) => {
@@ -125,6 +155,7 @@ app.post("/submitUser", async (req, res) => {
   const validationResult = schema.validate({ name, email, password });
   if (validationResult.error != null) {
     console.log(validationResult.error);
+    // update this later
     res.send(
       `${validationResult.error.details[0].context.label} is required <br> <a href="/signup">Try again</a>`,
     );
@@ -137,6 +168,7 @@ app.post("/submitUser", async (req, res) => {
     name: name,
     email: email,
     password: hashedPassword,
+    user_type: "user",
   });
   console.log("Inserted user");
 
@@ -166,7 +198,7 @@ app.post("/loginSubmit", async (req, res) => {
 
   const result = await userCollection
     .find({ email: email })
-    .project({ name: 1, email: 1, password: 1, _id: 1 })
+    .project({ name: 1, email: 1, password: 1, user_type: 1, _id: 1 })
     .toArray();
 
   console.log(result);
@@ -179,15 +211,44 @@ app.post("/loginSubmit", async (req, res) => {
     console.log("correct password");
     req.session.authenticated = true;
     req.session.name = result[0].name;
+    req.session.user_type = result[0].user_type;
     req.session.cookie.maxAge = expireTime;
-
     res.redirect("/");
     return;
   } else {
     console.log("incorrect password");
     res.render("incorrectLogin");
-    return;
   }
+});
+
+app.get("/admin", sessionValidation, adminAuthorization, async (req, res) => {
+  const result = await userCollection
+    .find()
+    .project({ name: 1, user_type: 1, _id: 1 })
+    .toArray();
+  console.log(result);
+  res.render("admin", { users: result });
+});
+
+app.post(
+  "/promote",
+  sessionValidation,
+  adminAuthorization,
+  async (req, res) => {
+    await userCollection.updateOne(
+      { name: req.body.name },
+      { $set: { user_type: "admin" } },
+    );
+    res.redirect("admin");
+  },
+);
+
+app.post("/demote", sessionValidation, adminAuthorization, async (req, res) => {
+  await userCollection.updateOne(
+    { name: req.body.name },
+    { $set: { user_type: "user" } },
+  );
+  res.redirect("admin");
 });
 
 app.get("/logout", (req, res) => {
