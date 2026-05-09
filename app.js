@@ -118,20 +118,12 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.get("/", (req, res) => {
-  if (!req.session.authenticated) {
-    res.redirect("/login");
-    return;
-  }
+app.get("/", sessionValidation, (req, res) => {
   var name = req.session.name;
   res.render("index", { name: name });
 });
 
-app.get("/members", (req, res) => {
-  if (!req.session.authenticated) {
-    res.redirect("/login");
-    return;
-  }
+app.get("/members", sessionValidation, (req, res) => {
   var name = req.session.name;
 
   res.render("members", { name: name });
