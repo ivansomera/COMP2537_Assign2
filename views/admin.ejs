@@ -1,0 +1,20 @@
+<%- include("templates/header") %> 
+	<h1>Users</h1>
+    <div>
+        <% for(user of users) { %>
+            <div>
+                <div class="d-flex gap-3 align-items-center">
+                    <h3> <%= user.name %> (<%= user.user_type %>)  </h3>
+                    <form action="/promote" method="post">  
+                       <input type="hidden" name="name" value="<%= user.name %>">                     
+                       <button class="btn btn-primary btn-sm">Promote to admin</button> 
+                    </form>
+                    <form action="/demote" method="post">
+                        <input type="hidden" name="name" value="<%= user.name %>">                                            
+                       <button class="btn btn-primary btn-sm btn-danger">Demote to user</button> 
+                    </form>
+                </div>
+            </div>
+        <% } %> 
+    </div>
+<%- include("templates/footer") %> 
