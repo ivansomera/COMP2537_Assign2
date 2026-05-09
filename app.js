@@ -101,12 +101,10 @@ function adminAuthorization(req, res, next) {
 }
 
 const navLinks = [
-  { name: "Home", url: "/" },
-  { name: "Signup", url: "/signup" },
   { name: "Login", url: "/login" },
+  { name: "Signup", url: "/signup" },
   { name: "Members", url: "/members" },
   { name: "Admin", url: "/admin" },
-  { name: "Logout", url: "/logout" },
 ];
 
 app.use((req, res, next) => {
