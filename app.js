@@ -116,8 +116,13 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.get("/", sessionValidation, (req, res) => {
+
+app.get("/", (req, res) => {
   var name = req.session.name;
+  if (!req.session.authenticated) {
+    res.render("index");
+    return;
+  }
   res.render("index", { name: name });
 });
 
